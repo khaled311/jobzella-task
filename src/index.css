@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  font-family: "Nunito", "sans-serif";
+}
+
+#default-checkbox:checked + label div span {
+  @apply block opacity-100;
+}
+
+.default-checkbox1:checked + label {
+  @apply text-[#044C7F];
+}
+
+.default-checkbox1:checked + label div {
+  @apply border-[#044C7F];
+}
+
+.default-checkbox1:checked + label div span {
+  @apply block opacity-100;
+}
