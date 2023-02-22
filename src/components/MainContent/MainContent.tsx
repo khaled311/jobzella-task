@@ -18,9 +18,9 @@ interface IStore {
 }
 
 const MainContent = (props: Props) => {
-  const store: IStore = useSelector((state) => state);
+  const store: IStore = useSelector((state) => state) as IStore;
   const dispatch = useDispatch();
-  console.log("store", store);
+
   return (
     <div className="p-[45px_100px_45px_40px] bg-[#FBFBFB] min-h-full">
       {store.isOpen ? <Modal modalName={store.modal} /> : null}
