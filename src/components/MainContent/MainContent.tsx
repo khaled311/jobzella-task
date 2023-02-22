@@ -12,8 +12,13 @@ interface IItem {
   status: string;
 }
 
+interface IStore {
+  isOpen: boolean;
+  modal: string;
+}
+
 const MainContent = (props: Props) => {
-  const store = useSelector((state) => state);
+  const store: IStore = useSelector((state) => state);
   const dispatch = useDispatch();
   console.log("store", store);
   return (
