@@ -1,30 +1,92 @@
-import { useState } from "react";
-import { Clock, Files, Plus, Star } from "../../assets";
+import { Plus, Star } from "../../assets";
 import { useSelector, useDispatch } from "react-redux";
-import { openModal, closeModal } from "../../store/store";
-import { Modal } from "..";
-type Props = {};
+import { changeTaskStatus, openModal } from "../../store/store";
+import { Column, Modal } from "..";
+import axios from "axios";
+import { Navigate, useParams } from "react-router-dom";
+import { getAccessTokenFromLocalStorage } from "../../utils/localStorage";
+import { useQuery } from "react-query";
+import { useEffect, useState } from "react";
+import { DragDropContext } from "react-beautiful-dnd";
+import { v4 as uuid } from "uuid";
 
-interface IItem {
-  color: string;
-  name: string;
-  count: number;
-  status: string;
-}
+const getTasks = async (id: string) => {
+  const { data } = await axios.get(`tasks?group_id=${id}`).then((res) => res);
+  return data?.data;
+};
 
-interface IStore {
-  isOpen: boolean;
-  modal: string;
-}
+const updateTaskStatus = async (id: string, column: string) => {
+  await axios.patch(`tasks/${id}`, { status: column });
+};
 
-const MainContent = (props: Props) => {
-  const store: IStore = useSelector((state) => state) as IStore;
+const MainContent = () => {
+  const [dndTasks, setDndTasks] = useState([]);
+  const { id } = useParams();
+  const { refetch, isLoading } = useQuery(
+    "tasks",
+    () => getTasks(id as string),
+    {
+      onSuccess: (data) => {
+        setDndTasks(data);
+      },
+    }
+  );
+
+  const colmuns = [
+    { color: "#973FCF", name: "To Do" },
+    {
+      color: "#FFA500",
+      name: "In Progress",
+    },
+    { color: "#68B266", name: "Done" },
+  ];
+
+  const store: any = useSelector<TStore>((state) => state);
   const dispatch = useDispatch();
+  const token = getAccessTokenFromLocalStorage();
+  if (!token) {
+    return <Navigate to="/" replace />;
+  }
 
+  useEffect(() => {
+    refetch();
+  }, [id, store.isOpen]);
+
+  const onDragEnd = async (result: any, columns: any, setColumns: any) => {
+    const taskId = result.draggableId;
+    if (!result.destination) return;
+
+    const { source, destination } = result;
+    if (source.droppableId !== destination.droppableId) {
+      const sourceColumn = columns[source.droppableId];
+      const destColumn = columns[destination.droppableId];
+      const sourceItems = [...sourceColumn];
+      const destItems = [...destColumn];
+
+      const [removed] = sourceItems.splice(source.index, 1);
+
+      destItems.splice(destination.index, 0, {
+        ...removed,
+        status: destination.droppableId,
+      });
+
+      await setColumns({
+        ...columns,
+        [source.droppableId]: [...sourceItems],
+        [destination.droppableId]: [...destItems],
+      });
+
+      updateTaskStatus(taskId, destination.droppableId);
+    }
+  };
+
+  if (isLoading) return null;
   return (
     <div className="p-[45px_100px_45px_40px] bg-[#FBFBFB] min-h-full">
-      {store.isOpen ? <Modal modalName={store.modal} /> : null}
-      <div className="flex gap-4"></div>
+      {store.isOpen ? (
+        <Modal modalType={store.modal} groupId={id as string} />
+      ) : null}
+
       {/* top */}
       <div className="flex justify-between w-full">
         {/* Left  */}
@@ -43,7 +105,9 @@ const MainContent = (props: Props) => {
           </div>
           <button
             className="flex items-center justify-center rounded-2xl bg-[#00587A] gap-[11px] h-[44px] hover:bg-[#00587A]/80 transition-all ml-auto w-[200px]"
-            onClick={() => dispatch(openModal("task"))}
+            onClick={() => {
+              dispatch(openModal("tasks"));
+            }}
           >
             <Plus />
             <span className="text-white font-semibold text-lg">Add Task</span>
@@ -55,106 +119,19 @@ const MainContent = (props: Props) => {
 
       {/* Main */}
       <div className="flex gap-4 w-full mt-6">
-        {[
-          { color: "#973FCF", name: "To Do", count: 3, status: "toDo" },
-          {
-            color: "#FFA500",
-            name: "In Progress",
-            count: 2,
-            status: "inProgress",
-          },
-          { color: "#68B266", name: "Done", count: 1, status: "Done" },
-        ].map((item: IItem, index: number) => (
-          <div className="grow bg-white rounded-lg p-4" key={index}>
-            {/* Head */}
-            <div className="flex gap-[8px] items-center">
-              <span
-                className={`w-[6px] h-[6px] rounded-full ${`bg-[${item.color}]`}`}
-              ></span>
-              <p className="text-[#0D062D] text-sm font-nunito font-bold">
-                {item.name}
-              </p>
-              <span className="w-[16px] h-[16px] bg-[#E0E0E0] flex items-center justify-center rounded-full text-[10px] text-[#625F6D]">
-                {item.count}
-              </span>
-            </div>
-            <div
-              className={`mt-[15px] w-full h-[2px] bg-[${item.color}] mb-[27px]`}
-            ></div>
-            {/* Head */}
-
-            {/* Card */}
-            <div className={`p-[13px] bg-[#F9F9F9] [&:not(first)]:mt-[17px]`}>
-              {/* Details */}
-              <h2 className="font-nunito font-semibold text-sm text-[#0D062D] mb-[2px]">
-                UI/UX Design
-              </h2>
-              <p className="text-[#787486] text-xs mb-[11px]">
-                Brainstorming brings team members' diverse experience into play.
-              </p>
-              {/* Details */}
-
-              {/* Date */}
-              <div className="flex bg-[#5AC3DD33] w-[55px] h-[20px] items-center justify-center gap-[3px] mb-[8px]">
-                <Clock />
-                <span className="font-medium text-[10px] leading-[15px] text-[#5AC3DD]">
-                  5 May
-                </span>
-              </div>
-              {/* Date */}
-
-              {/* Extras */}
-              <div className="flex justify-between">
-                {/* Images */}
-                <div className="flex space-x-[-5px]">
-                  <img src="/assets/Ellipse12.png" alt="" />
-                  <img src="/assets/Ellipse13.png" alt="" />
-                  <img src="/assets/Ellipse15.png" alt="" />
-                </div>
-                {/* Images */}
-
-                {/* Files */}
-                <div className="flex gap-[5px]">
-                  <Files />
-                  <span className="text-[#787486] text-[10px] leading-[15px] font-medium">
-                    0 Files
-                  </span>
-                </div>
-                {/* Files */}
-              </div>
-              {/* Extras */}
-
-              {/* Progress */}
-              <div
-                className={`flex items-center h-[6px] bg-opacity-10 rounded-[10px] mt-[20px] ${
-                  item.status === "toDo"
-                    ? "bg-[#973FCF]"
-                    : item.status === "inProgress"
-                    ? "bg-[#FFA500]"
-                    : "bg-[#68B266]"
-                }`}
-              >
-                <div
-                  className={`bg-[${item.color}] h-[6px] ${
-                    item.status === "toDo"
-                      ? "w-[0px]"
-                      : item.status === "inProgress"
-                      ? "w-[60%]"
-                      : "w-[100%]"
-                  } rounded-[10px]`}
-                ></div>
-              </div>
-              {/* Progress */}
-            </div>
-            {/* Card */}
-            <button
-              className="flex items-center justify-center rounded-2xl border border-dashed border-[#00587A4D] w-full h-[44px] mt-6"
-              onClick={() => dispatch(openModal("task"))}
-            >
-              <Plus fill="#00587A" />
-            </button>
-          </div>
-        ))}
+        <DragDropContext
+          onDragEnd={(result) => onDragEnd(result, dndTasks, setDndTasks)}
+        >
+          {Object.keys(dndTasks)?.map((item: string, index: number) => (
+            <Column
+              columnStatus={item}
+              index={index}
+              tasks={dndTasks}
+              colmuns={colmuns}
+              key={uuid()}
+            />
+          ))}
+        </DragDropContext>
       </div>
       {/* Main */}
     </div>

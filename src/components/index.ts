@@ -5,3 +5,6 @@ export { default as Sidebar } from "./Sidebar/Sidebar";
 export { default as Navbar } from "./Navbar/Navbar";
 export { default as MainContent } from "./MainContent/MainContent";
 export { default as Modal } from "./Modal/Modal";
+export { default as ErrorMessage } from "./ErrorMessage/ErrorMessage";
+export { default as Column } from "./Column/Column";
+export { default as Card } from "./Card/Card";

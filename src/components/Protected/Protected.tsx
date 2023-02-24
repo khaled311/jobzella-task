@@ -1,13 +1,15 @@
-import React from "react";
 import { Navigate } from "react-router-dom";
 
 type Props = {
-  isSignedIn: any;
   children: any;
 };
 
-const Protected = ({ isSignedIn, children }: Props) => {
-  if (!isSignedIn) {
+const Protected = ({ children }: Props) => {
+  const userData =
+    JSON.parse(sessionStorage.getItem("userData") as any) ||
+    JSON.parse(localStorage.getItem("userData") as any);
+
+  if (!userData?.data?.token) {
     return <Navigate to="/" replace />;
   }
   return children;

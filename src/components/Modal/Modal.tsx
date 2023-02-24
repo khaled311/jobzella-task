@@ -1,51 +1,75 @@
-import { useDispatch } from "react-redux";
-import { closeModal } from "../../store/store";
-import { Close } from "../../assets";
+import { useState } from "react";
+import { changeTaskStatus, closeModal } from "../../store/store";
+import { Close, LoadingCircle } from "../../assets";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import axios from "axios";
+import { toast } from "react-toastify";
+import { useSelector, useDispatch } from "react-redux";
 
 type Inputs = {
   name: string;
   description: string;
+  status: string;
 };
 
-const schema = yup
-  .object({
+const schema: Record<TModalType, unknown> = {
+  groups: yup.object({
     name: yup.string().min(3).max(150).required(),
-    // description: yup.string().min(3).max(150).required(),
-    // description: yup.number().positive().integer().required(),
-  })
-  .required();
-
-type Props = {
-  modalName: string;
+  }),
+  tasks: yup.object({
+    name: yup.string().min(3).max(100).required(),
+    description: yup.string().min(3).max(500).nullable(),
+    // description: yup.string().when(
+    //   {
+    //     is: (other) => other.length !== 0,
+    //     then: yup.string().min(3).max(500).required(),
+    //   },
+    //   ["description"]
+    // ),
+    status: yup.string().required(),
+  }),
 };
 
-const Modal = ({ modalName }: Props) => {
+interface Props {
+  modalType: TModalType;
+  groupId: string;
+}
+
+const Modal = ({ modalType, groupId }: Props) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const { status }: any = useSelector<TStore>((state) => state);
   const dispatch = useDispatch();
+
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<Inputs>({
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema[modalType]),
   });
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    await axios.post("https://todo-api.jbz.la/api/groups", data);
 
-    console.log("Sent");
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    setIsLoading(true);
+    await axios.post(`https://todo-api.jbz.la/api/${modalType}`, {
+      ...data,
+      group_id: groupId,
+    });
+    setIsLoading(false);
+    toast.success(
+      `${modalType === "groups" ? "Group" : "Task"} added successfully!`
+    );
+    dispatch(closeModal());
   };
-  console.log("errors", errors);
+
   return (
     <div className="fixed z-20 top-0 left-0 w-full h-full bg-[#0000006B] backdrop-blur-[1px] flex items-center justify-center">
       <div className="max-w-[570px] w-full bg-white rounded-lg overflow-hidden">
         {/* Head */}
         <div className="flex justify-between h-[65px] bg-[#00587A33] p-[17px_25px] mb-[24px]">
           <h2 className="capitalize font-bold text-[#1A242A] text-2xl">
-            Add {modalName}
+            Add {modalType}
           </h2>
           <button onClick={() => dispatch(closeModal())}>
             <Close />
@@ -55,7 +79,7 @@ const Modal = ({ modalName }: Props) => {
 
         {/* Modal Body */}
         <form className="p-[0_36px_0_22px]" onSubmit={handleSubmit(onSubmit)}>
-          {modalName === "group" ? (
+          {modalType === "groups" ? (
             <label htmlFor="name">
               <p className="font-nunito text-[#373F51] font-semibold text-base mb-[8px]">
                 Name <span className="text-[#EF2206]">*</span>
@@ -113,7 +137,10 @@ const Modal = ({ modalName }: Props) => {
                     id="default-checkbox1"
                     type="radio"
                     className="hidden group default-checkbox1"
-                    name="status"
+                    value="todo"
+                    {...register("status")}
+                    checked={status === "todo"}
+                    onChange={() => dispatch(changeTaskStatus("todo"))}
                   />
                   <label
                     htmlFor="default-checkbox1"
@@ -132,7 +159,10 @@ const Modal = ({ modalName }: Props) => {
                     id="default-checkbox2"
                     type="radio"
                     className="hidden group default-checkbox1"
-                    name="status"
+                    value="inprogress"
+                    {...register("status")}
+                    checked={status === "progress"}
+                    onChange={() => dispatch(changeTaskStatus("progress"))}
                   />
                   <label
                     htmlFor="default-checkbox2"
@@ -151,7 +181,10 @@ const Modal = ({ modalName }: Props) => {
                     id="default-checkbox3"
                     type="radio"
                     className="hidden group default-checkbox1"
-                    name="status"
+                    value="done"
+                    {...register("status")}
+                    checked={status === "done"}
+                    onChange={() => dispatch(changeTaskStatus("done"))}
                   />
                   <label
                     htmlFor="default-checkbox3"
@@ -167,8 +200,11 @@ const Modal = ({ modalName }: Props) => {
               </div>
             </>
           )}
-          <button className="flex items-center justify-center rounded-full w-[260px] h-[44px] bg-[#00587A] font-nunito font-semibold text-white text-lg mx-auto m-[33px_0_40px_0]">
-            Add {modalName}
+          <button
+            type="submit"
+            className="flex items-center justify-center rounded-full w-[260px] h-[44px] bg-[#00587A] font-nunito font-semibold text-white text-lg mx-auto m-[33px_0_40px_0]"
+          >
+            {isLoading ? <LoadingCircle /> : `Add ${modalType}`}
           </button>
         </form>
 

@@ -9,3 +9,4 @@ export { default as Star } from "./Star";
 export { default as Clock } from "./Clock";
 export { default as Files } from "./Files";
 export { default as Close } from "./Close";
+export { default as LoadingCircle } from "./Loading";

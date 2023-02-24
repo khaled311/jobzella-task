@@ -3,6 +3,10 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { Envelope, Eye, Lock } from "../../assets";
 import axios from "axios";
+import ErrorMessage from "../ErrorMessage/ErrorMessage";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { getAccessTokenFromLocalStorage } from "../../utils/localStorage";
 
 type Props = {};
 
@@ -11,13 +15,19 @@ type Inputs = {
   password: string;
 };
 
+const passwordRules =
+  /^(?=.*\d)(?=.*[a-z])([~`!@#$%^&*()-_+=])(?=.*[A-Z]).{8,}$/;
+
 const schema = yup
   .object({
     email: yup.string().email().max(320).required(),
     password: yup
       .string()
       .min(8)
-      // .matches(/[a-zA-Z ~!@#$%^`&*()-_=+?/\|]/g)
+      // .matches(passwordRules, {
+      //   message:
+      //     "password must have at least one [upper and lower letter, one special character and min length of 8]",
+      // })
       .required(),
   })
   .required();
@@ -25,6 +35,10 @@ const schema = yup
 type FormData = yup.InferType<typeof schema>;
 
 const Login = (props: Props) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememmberMe, setRememmberMe] = useState(false);
+  const navigate = useNavigate();
+
   const {
     register,
     handleSubmit,
@@ -32,13 +46,22 @@ const Login = (props: Props) => {
   } = useForm<FormData>({
     resolver: yupResolver(schema),
   });
-  const onSubmit: SubmitHandler<Inputs> = async (data) => {
-    await axios.post("https://todo-api.jbz.la/api/groups", data);
 
-    console.log("Sent");
+  const onSubmit: SubmitHandler<Inputs> = async (data) => {
+    axios.post("login", data).then((res) => {
+      if (rememmberMe) {
+        localStorage.setItem("userData", JSON.stringify(res.data));
+      } else {
+        sessionStorage.setItem("userData", JSON.stringify(res.data));
+      }
+      navigate("/home/1");
+    });
   };
 
-  console.log("errors", errors);
+  const token = getAccessTokenFromLocalStorage();
+  if (token) {
+    return <Navigate to="/home/1" replace />;
+  }
 
   return (
     <div className="bg-[#044C7F] min-h-screen relative isolate">
@@ -79,6 +102,7 @@ const Login = (props: Props) => {
               Please sign-in to your account and start the adventure
             </p>
 
+            <ErrorMessage message={errors?.email?.message} />
             <div className="relative mb-4">
               <span className="absolute top-1/2 left-4 -translate-y-1/2">
                 <Envelope />
@@ -90,17 +114,21 @@ const Login = (props: Props) => {
                 className="p-[12px_38px] border border-[#4C4E6438] rounded-lg focus:outline-none w-full"
               />
             </div>
+            <ErrorMessage message={errors?.password?.message} />
             <div className="relative mb-4">
               <span className="absolute top-1/2 left-4 -translate-y-1/2">
                 <Lock />
               </span>
               <input
-                type="text"
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 {...register("password")}
                 className="p-[12px_38px] border border-[#4C4E6438] rounded-lg focus:outline-none w-full"
               />
-              <span className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer">
+              <span
+                className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer"
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
                 <Eye />
               </span>
             </div>
@@ -108,11 +136,13 @@ const Login = (props: Props) => {
               <input
                 id="default-checkbox"
                 type="checkbox"
+                checked={rememmberMe}
                 className="hidden group"
               />
               <label
                 htmlFor="default-checkbox"
                 className="text-sm text-[#909598] cursor-pointer flex items-center gap-[13px]"
+                onClick={() => setRememmberMe((prev) => !prev)}
               >
                 <div className="w-[18px] h-[18px] border-2 border-[#ABAEB0] flex items-center justify-center">
                   <span className="w-[70%] h-[70%] bg-sky-500 opacity-0 transition-opacity"></span>
