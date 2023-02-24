@@ -20,14 +20,13 @@ const schema: Record<TModalType, unknown> = {
   }),
   tasks: yup.object({
     name: yup.string().min(3).max(100).required(),
-    description: yup.string().min(3).max(500).nullable(),
-    // description: yup.string().when(
-    //   {
-    //     is: (other) => other.length !== 0,
-    //     then: yup.string().min(3).max(500).required(),
-    //   },
-    //   ["description"]
-    // ),
+    description: yup.string().when(([value]) => {
+      if (value.length > 0) {
+        return yup.string().min(3).max(500).required();
+      } else {
+        yup.string().nullable().notRequired();
+      }
+    }),
     status: yup.string().required(),
   }),
 };
@@ -39,16 +38,18 @@ interface Props {
 
 const Modal = ({ modalType, groupId }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
-  const { status }: any = useSelector<TStore>((state) => state);
   const dispatch = useDispatch();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<Inputs>({
     resolver: yupResolver(schema[modalType]),
   });
+
+  const statusValue = watch("status");
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsLoading(true);
@@ -139,8 +140,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                     className="hidden group default-checkbox1"
                     value="todo"
                     {...register("status")}
-                    checked={status === "todo"}
-                    onChange={() => dispatch(changeTaskStatus("todo"))}
+                    checked={statusValue === "todo"}
                   />
                   <label
                     htmlFor="default-checkbox1"
@@ -159,10 +159,9 @@ const Modal = ({ modalType, groupId }: Props) => {
                     id="default-checkbox2"
                     type="radio"
                     className="hidden group default-checkbox1"
-                    value="inprogress"
+                    value="progress"
                     {...register("status")}
-                    checked={status === "progress"}
-                    onChange={() => dispatch(changeTaskStatus("progress"))}
+                    checked={statusValue === "progress"}
                   />
                   <label
                     htmlFor="default-checkbox2"
@@ -183,8 +182,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                     className="hidden group default-checkbox1"
                     value="done"
                     {...register("status")}
-                    checked={status === "done"}
-                    onChange={() => dispatch(changeTaskStatus("done"))}
+                    checked={statusValue === "done"}
                   />
                   <label
                     htmlFor="default-checkbox3"

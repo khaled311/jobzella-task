@@ -6,7 +6,7 @@ type TColumns = { color: string; name: string }[];
 type TTask = {
   id: number;
   name: string;
-  status: string;
+  status: TTaskType;
 };
 interface TTasks {
   [key: TTaskType]: TTask[];
