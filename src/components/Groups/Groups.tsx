@@ -7,7 +7,7 @@ interface IGroups {
 
 const Groups = ({ groups }: IGroups) => {
   return (
-    <ul className="max-h-[500px] overflow-y-auto">
+    <ul className="max-h-[450px] overflow-y-auto">
       {groups?.map((item: IGroup) => (
         <li key={item?.id}>
           <NavLink
