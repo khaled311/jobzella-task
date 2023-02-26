@@ -1,9 +1,9 @@
 import React from "react";
 import { Bell, BottomArrow, Search } from "../../assets";
 
-type Props = {};
+interface INavbar {}
 
-const Navbar = (props: Props) => {
+const Navbar = (props: INavbar) => {
   return (
     <div className="flex justify-between p-[26px_60px_18px_28px] shadow-[0px_4px_4px_rgba(103,103,103,0.08)] relative z-10">
       {/* Left */}

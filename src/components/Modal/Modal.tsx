@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { changeTaskStatus, closeModal } from "../../store/store";
+import { closeModal } from "../../store/store";
 import { Close, LoadingCircle } from "../../assets";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -7,6 +7,8 @@ import * as yup from "yup";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { useSelector, useDispatch } from "react-redux";
+import ErrorMessage from "../ErrorMessage/ErrorMessage";
+import { useMutation, useQueryClient } from "react-query";
 
 type Inputs = {
   name: string;
@@ -24,7 +26,7 @@ const schema: Record<TModalType, unknown> = {
       if (value.length > 0) {
         return yup.string().min(3).max(500).required();
       } else {
-        yup.string().nullable().notRequired();
+        return yup.string();
       }
     }),
     status: yup.string().required(),
@@ -39,6 +41,16 @@ interface Props {
 const Modal = ({ modalType, groupId }: Props) => {
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+  const { status: taskStatus }: any = useSelector<TStore>((state) => state);
+
+  const submitModalData = useMutation({
+    mutationFn: (data: any) =>
+      axios.post(modalType, {
+        ...data,
+        group_id: groupId,
+      }),
+  });
 
   const {
     register,
@@ -53,14 +65,14 @@ const Modal = ({ modalType, groupId }: Props) => {
 
   const onSubmit: SubmitHandler<Inputs> = async (data) => {
     setIsLoading(true);
-    await axios.post(`https://todo-api.jbz.la/api/${modalType}`, {
-      ...data,
-      group_id: groupId,
-    });
+    await submitModalData.mutateAsync(data);
     setIsLoading(false);
     toast.success(
       `${modalType === "groups" ? "Group" : "Task"} added successfully!`
     );
+    if (modalType === "groups") {
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+    }
     dispatch(closeModal());
   };
 
@@ -68,7 +80,7 @@ const Modal = ({ modalType, groupId }: Props) => {
     <div className="fixed z-20 top-0 left-0 w-full h-full bg-[#0000006B] backdrop-blur-[1px] flex items-center justify-center">
       <div className="max-w-[570px] w-full bg-white rounded-lg overflow-hidden">
         {/* Head */}
-        <div className="flex justify-between h-[65px] bg-[#00587A33] p-[17px_25px] mb-[24px]">
+        <div className="flex justify-between h-[65px] bg-[#00587A33] p-[17px_25px] mb-6">
           <h2 className="capitalize font-bold text-[#1A242A] text-2xl">
             Add {modalType}
           </h2>
@@ -94,9 +106,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                   errors?.name ? "border-red-600" : ""
                 }`}
               />
-              <p className="text-xs text-red-500 font-nunito capitalize">
-                {errors?.name?.message ? errors?.name?.message : ""}
-              </p>
+              <ErrorMessage message={errors?.name?.message} />
             </label>
           ) : (
             <>
@@ -111,9 +121,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                   {...register("name")}
                   className="w-full rounded-md p-[12px_16px] bg-[#F5F6F6] border hover:border-[#00587A] focus:border-[#00587A] focus:outline-none transition-colors text-sm font-nunito font-normal text-[#A3A3A3]"
                 />
-                <p className="text-xs text-red-500 font-nunito capitalize">
-                  {errors?.name?.message ? errors?.name?.message : ""}
-                </p>
+                <ErrorMessage message={errors?.name?.message} />
               </label>
               <label htmlFor="desc" className="my-[16px] block">
                 <p className="font-nunito text-[#373F51] font-semibold text-base mb-[8px]">
@@ -125,11 +133,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                   {...register("description")}
                   className="w-full rounded-md p-[12px_16px] bg-[#F5F6F6] border hover:border-[#00587A] focus:border-[#00587A] focus:outline-none transition-colors text-sm font-nunito font-normal text-[#A3A3A3] min-h-[100px]"
                 />
-                <p className="text-xs text-red-500 font-nunito capitalize">
-                  {errors?.description?.message
-                    ? errors?.description?.message
-                    : ""}
-                </p>
+                <ErrorMessage message={errors?.description?.message} />
               </label>
               <div className="flex gap-[40px]">
                 {/* Radio */}
@@ -140,7 +144,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                     className="hidden group default-checkbox1"
                     value="todo"
                     {...register("status")}
-                    checked={statusValue === "todo"}
+                    checked={statusValue === "todo" || taskStatus === "todo"}
                   />
                   <label
                     htmlFor="default-checkbox1"
@@ -161,7 +165,9 @@ const Modal = ({ modalType, groupId }: Props) => {
                     className="hidden group default-checkbox1"
                     value="progress"
                     {...register("status")}
-                    checked={statusValue === "progress"}
+                    checked={
+                      statusValue === "progress" || taskStatus === "progress"
+                    }
                   />
                   <label
                     htmlFor="default-checkbox2"
@@ -182,7 +188,7 @@ const Modal = ({ modalType, groupId }: Props) => {
                     className="hidden group default-checkbox1"
                     value="done"
                     {...register("status")}
-                    checked={statusValue === "done"}
+                    checked={statusValue === "done" || taskStatus === "done"}
                   />
                   <label
                     htmlFor="default-checkbox3"

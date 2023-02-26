@@ -2,12 +2,13 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { Login, Home, Protected } from "./components";
+import { Login } from "./components";
 import { store } from "./store/store";
 import { Provider } from "react-redux";
 import axios from "axios";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { getAccessTokenFromLocalStorage } from "./utils/localStorage";
+import App from "./App";
 
 const queryClient = new QueryClient();
 const router = createBrowserRouter([
@@ -17,19 +18,11 @@ const router = createBrowserRouter([
   },
   {
     path: "/home",
-    element: (
-      <QueryClientProvider client={queryClient}>
-        <Home />
-      </QueryClientProvider>
-    ),
+    element: <App />,
   },
   {
     path: "/home/:id",
-    element: (
-      <QueryClientProvider client={queryClient}>
-        <Home />
-      </QueryClientProvider>
-    ),
+    element: <App />,
   },
 ]);
 
@@ -45,9 +38,9 @@ axios.interceptors.request.use(
 );
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  // <React.StrictMode>
   <Provider store={store}>
-    <RouterProvider router={router} />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </Provider>
-  // </React.StrictMode>
 );

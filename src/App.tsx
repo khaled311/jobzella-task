@@ -1,11 +1,11 @@
-import axios from "axios";
-import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import { Home } from "./components";
 
 function App() {
   return (
     <div className="App">
-      <Outlet />
+      <ToastContainer />
+      <Home />
     </div>
   );
 }

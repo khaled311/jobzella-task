@@ -10,3 +10,4 @@ export { default as Clock } from "./Clock";
 export { default as Files } from "./Files";
 export { default as Close } from "./Close";
 export { default as LoadingCircle } from "./Loading";
+export { default as Spinner } from "./Spinner";
