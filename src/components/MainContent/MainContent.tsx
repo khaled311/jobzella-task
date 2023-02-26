@@ -104,12 +104,12 @@ const MainContent = () => {
 
   if (isLoading) return <Spinner />;
   return (
-    <div className="p-[45px_100px_45px_40px] bg-[#FBFBFB] min-h-full">
+    <div className="p-[45px_100px_45px_40px] bg-[#FBFBFB] h-[calc(100vh-100px)] overflow-y-auto">
       {isOpen ? <Modal modalType={modal} groupId={id as string} /> : null}
 
       <TopContent />
 
-      <div className="flex gap-4 w-full mt-6">
+      <div className="flex gap-4 w-full mt-6 h-max">
         <DragDropContext
           onDragEnd={(result) => onDragEnd(result, dndTasks, setDndTasks)}
         >
